@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
-import tensorflow as tf
 from catboost import CatBoostRegressor
 
 st.set_page_config(page_title="Прогнозирование", layout="wide")
@@ -18,7 +17,7 @@ def load_all():
         "Bagging": joblib.load("models/bagging.pkl"),
         "Stacking": joblib.load("models/stacking.pkl"),
         "CatBoost": CatBoostRegressor().load_model("models/catboost.cbm"),
-        "FCNN": tf.keras.models.load_model("models/fcnn.keras")
+        "MLPRegressor": joblib.load("models/mlp.pkl"),
     }
     return scaler, models
 
