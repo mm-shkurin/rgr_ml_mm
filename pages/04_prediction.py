@@ -7,7 +7,7 @@ import tensorflow as tf
 
 st.set_page_config(page_title="Прогнозирование", layout="wide")
 
-st.title("🔮 Инференс моделей ML")
+st.title("Инференс моделей ML")
 
 @st.cache_resource
 def load_all():
@@ -87,7 +87,7 @@ if input_df is not None:
     st.dataframe(res_df.style.applymap(color_quality, subset=["Прогноз качества"]), use_container_width=True)
     
     st.info("""
-    💡 **Интерпретация результата:**
+    **Интерпретация результата:**
     • `≥ 7.0` — Высокое качество (Premium)
     • `5.0 – 6.9` — Среднее качество (Table Wine)
     • `< 5.0` — Низкое качество (Possible defects)

@@ -3,7 +3,7 @@ import pandas as pd
 
 st.set_page_config(page_title="О датасете", layout="wide")
 
-st.title("📊 Описание набора данных Wine Quality")
+st.title("Описание набора данных Wine Quality")
 
 st.markdown("""
 ### Предметная область

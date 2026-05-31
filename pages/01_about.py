@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="О разработчике", layout="wide")
 
-st.title("👤 Информация о разработчике")
+st.title("Информация о разработчике")
 
 col1, col2 = st.columns([1, 3])
 with col1:

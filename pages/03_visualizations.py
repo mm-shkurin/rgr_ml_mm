@@ -5,7 +5,7 @@ import seaborn as sns
 
 st.set_page_config(page_title="Визуализации", layout="wide")
 
-st.title("📈 Визуализация зависимостей в данных")
+st.title("Визуализация зависимостей в данных")
 
 df = pd.read_csv("winequality_combined.csv", sep=";")
 
