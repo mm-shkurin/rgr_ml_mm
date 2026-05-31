@@ -3,7 +3,9 @@ import pandas as pd
 import numpy as np
 import joblib
 from catboost import CatBoostRegressor
-import tensorflow as tf
+
+mlp_model = joblib.load("models/mlp.pkl")
+models["MLP (FCNN)"] = mlp_model
 
 st.set_page_config(page_title="Прогнозирование", layout="wide")
 

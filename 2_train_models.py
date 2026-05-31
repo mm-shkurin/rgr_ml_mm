@@ -63,18 +63,20 @@ r2_stack = r2_score(y_test, stack.predict(X_test))
 joblib.dump(stack, "models/stacking.pkl")
 results.append({"Model": "Stacking", "R²": r2_stack})
 
-print(" Обучение TensorFlow FCNN...")
-tf_model = tf.keras.Sequential([
-    tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
-    tf.keras.layers.Dropout(0.2),
-    tf.keras.layers.Dense(32, activation='relu'),
-    tf.keras.layers.Dense(1)
-])
-tf_model.compile(optimizer='adam', loss='mse')
-tf_model.fit(X_train, y_train, epochs=50, batch_size=32, validation_split=0.2, verbose=0)
-r2_fcnn = r2_score(y_test, tf_model.predict(X_test, verbose=0))
-tf_model.save("models/fcnn.keras")
-results.append({"Model": "FCNN", "R²": r2_fcnn})
+print("📊 Обучение MLP (Fully Connected Neural Network)...")
+from sklearn.neural_network import MLPRegressor
+mlp = MLPRegressor(
+    hidden_layer_sizes=(128, 64, 32),
+    activation='relu',
+    solver='adam',
+    max_iter=500,
+    random_state=42,
+    early_stopping=True
+)
+mlp.fit(X_train, y_train)
+r2_mlp = r2_score(y_test, mlp.predict(X_test))
+joblib.dump(mlp, "models/mlp.pkl")
+results.append({"Model": "MLP (FCNN)", "R²": r2_mlp})
 
 df_res = pd.DataFrame(results).sort_values(by="R²", ascending=False)
 print("Итоговые метрики (R²) на тестовой выборке:")
