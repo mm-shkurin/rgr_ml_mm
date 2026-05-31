@@ -6,4 +6,3 @@ catboost
 matplotlib
 seaborn
 joblib
-tensorflow
