@@ -35,5 +35,5 @@ np.save("data/processed/X_train.npy", X_train_scaled)
 np.save("data/processed/X_test.npy", X_test_scaled)
 np.save("data/processed/y_train.npy", y_train.values)
 np.save("data/processed/y_test.npy", y_test.values)
-
+df.to_csv("data/winequality_combined.csv", index=False)
 print("\nДанные и скалер сохранены в папки data/processed и models/")
