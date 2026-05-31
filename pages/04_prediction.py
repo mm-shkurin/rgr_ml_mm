@@ -37,7 +37,7 @@ if input_mode == "Загрузить CSV":
     uploaded = st.file_uploader("Загрузите .csv с колонками признаков", type=["csv"])
     if uploaded:
         try:
-            df_up = pd.read_csv(uploaded)
+            df_up = pd.read_csv(uploaded, sep=";")
             missing = [f for f in features if f not in df_up.columns]
             if missing:
                 st.error(f"В файле отсутствуют колонки: {missing}")
