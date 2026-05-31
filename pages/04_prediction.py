@@ -2,10 +2,8 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
+import tensorflow as tf
 from catboost import CatBoostRegressor
-models = {}
-mlp_model = joblib.load("models/mlp.pkl")
-models["MLP (FCNN)"] = mlp_model
 
 st.set_page_config(page_title="Прогнозирование", layout="wide")
 
@@ -77,7 +75,10 @@ if input_df is not None:
         p = model.predict(X_scaled)
         if name == "FCNN" and p.ndim > 1:
             p = p.flatten()
-        preds[name] = round(float(p[0]), 2)
+        if len(p) == 1:
+            preds[name] = round(float(p[0]), 2)
+        else:
+            preds[name] = f"Среднее: {p.mean():.2f} (диапазон: {p.min():.2f}–{p.max():.2f})"
     
     res_df = pd.DataFrame(list(preds.items()), columns=["Модель", "Прогноз качества"])
     
