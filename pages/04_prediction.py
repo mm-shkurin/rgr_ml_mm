@@ -1,3 +1,5 @@
+import traceback
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -11,6 +13,7 @@ st.title("Инференс моделей ML")
 @st.cache_resource
 def load_all():
     scaler = joblib.load("models/scaler.pkl")
+    le = joblib.load("models/label_encoder.pkl") 
     models = {
         "Ridge": joblib.load("models/ridge.pkl"),
         "GradientBoosting": joblib.load("models/gradient_boosting.pkl"),
@@ -21,7 +24,7 @@ def load_all():
     }
     return scaler, models
 
-scaler, models = load_all()
+scaler, models , le= load_all()
 
 features = [
     "fixed acidity", "volatile acidity", "citric acid", "residual sugar",
@@ -63,34 +66,112 @@ else:
         input_df = pd.DataFrame([data])
         st.success("Данные готовы к прогнозу")
         st.dataframe(input_df)
+def preprocess_input(df, le, feature_list):
+    """
+    Предобработка входных данных для инференса.
+    - Кодирует wine_type, если он в строковом формате
+    - Гарантирует порядок колонок как при обучении
+    """
+    df = df.copy()
+    
+    # Обработка wine_type: если строки → кодируем, если числа → оставляем
+    if df["wine_type"].dtype == object:
+        df["wine_type"] = df["wine_type"].str.lower().str.strip()
+        # Проверка: все значения есть в le.classes_?
+        unknown = set(df["wine_type"]) - set(le.classes_)
+        if unknown:
+            raise ValueError(f"Неизвестные категории в wine_type: {unknown}. Ожидается: {list(le.classes_)}")
+        df["wine_type"] = le.transform(df["wine_type"])
+    elif df["wine_type"].dtype in [np.int64, np.int32, np.float64]:
+        # Уже закодировано (0/1), просто приводим к int
+        df["wine_type"] = df["wine_type"].astype(int)
+    else:
+        raise ValueError(f"Неподдерживаемый тип данных для wine_type: {df['wine_type'].dtype}")
+    
+    # Проверка наличия всех фич
+    missing = set(feature_list) - set(df.columns)
+    if missing:
+        raise ValueError(f"Отсутствуют колонки: {missing}")
+    
+    # Возвращаем строго в порядке обучения
+    return df[feature_list]
 
 if input_df is not None:
     st.divider()
-    st.subheader("Результаты предсказания")
+    st.subheader("🔮 Результаты предсказания")
     
-    X_scaled = scaler.transform(input_df)
-    preds = {}
-    for name, model in models.items():
-        p = model.predict(X_scaled)
-        if name == "FCNN" and p.ndim > 1:
-            p = p.flatten()
-        if len(p) == 1:
-            preds[name] = round(float(p[0]), 2)
-        else:
-            preds[name] = f"Среднее: {p.mean():.2f} (диапазон: {p.min():.2f}–{p.max():.2f})"
-    
-    res_df = pd.DataFrame(list(preds.items()), columns=["Модель", "Прогноз качества"])
-    
-    def color_quality(val):
-        if val >= 7: return "background-color: #4CAF50; color: white"
-        elif val >= 5: return "background-color: #FFC107; color: black"
-        else: return "background-color: #F44336; color: white"
+    try:
+        # 1. Предобработка (кодирование + порядок колонок)
+        input_processed = preprocess_input(input_df, le, features)
         
-    st.dataframe(res_df.style.applymap(color_quality, subset=["Прогноз качества"]), use_container_width=True)
-    
-    st.info("""
-    **Интерпретация результата:**
-    • `≥ 7.0` — Высокое качество (Premium)
-    • `5.0 – 6.9` — Среднее качество (Table Wine)
-    • `< 5.0` — Низкое качество (Possible defects)
-    """)
+        # 2. Масштабирование
+        X_scaled = scaler.transform(input_processed)
+        
+        # 3. Прогнозы по всем моделям
+        preds = {}
+        for name, model in models.items():
+            p = model.predict(X_scaled)
+            # Для нейросетей: flatten если нужно
+            if hasattr(p, 'ndim') and p.ndim > 1:
+                p = p.flatten()
+            # Форматируем вывод
+            if len(p) == 1:
+                preds[name] = round(float(p[0]), 2)
+            else:
+                preds[name] = {
+                    "mean": round(p.mean(), 2),
+                    "min": round(p.min(), 2),
+                    "max": round(p.max(), 2)
+                }
+        
+        # 4. Отображение результатов
+        res_data = []
+        for name, val in preds.items():
+            if isinstance(val, dict):
+                res_data.append({
+                    "Модель": name,
+                    "Прогноз": f"{val['mean']:.2f}",
+                    "Диапазон": f"{val['min']:.2f} – {val['max']:.2f}"
+                })
+            else:
+                res_data.append({
+                    "Модель": name,
+                    "Прогноз": f"{val:.2f}",
+                    "Диапазон": "-"
+                })
+        
+        res_df = pd.DataFrame(res_data)
+        
+        # Цветовая индикация качества
+        def highlight_quality(val):
+            try:
+                score = float(val)
+                if score >= 7:
+                    return "background-color: #4CAF50; color: white; font-weight: bold"
+                elif score >= 5:
+                    return "background-color: #FFC107; color: black"
+                else:
+                    return "background-color: #F44336; color: white"
+            except:
+                return ""
+        
+        st.dataframe(
+            res_df.style.applymap(highlight_quality, subset=["Прогноз"]),
+            use_container_width=True,
+            hide_index=True
+        )
+        
+        # 5. Интерпретация
+        st.info("""
+        **📊 Шкала качества вина:**
+        | Баллы | Категория | Описание |
+        |-------|-----------|----------|
+        | ≥ 7.0 | 🟢 Premium | Высокое качество, рекомендуется |
+        | 5.0–6.9 | 🟡 Standard | Обычное столовое вино |
+        | < 5.0 | 🔴 Low | Возможные дефекты, низкое качество |
+        """)
+        
+    except Exception as e:
+        st.error(f"❌ Ошибка при прогнозировании: {type(e).__name__}: {e}")
+        with st.expander("🔍 Детали ошибки"):
+            st.code(traceback.format_exc())

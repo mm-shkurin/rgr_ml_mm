@@ -29,7 +29,7 @@ print(f"Train: {X_train.shape}, Test: {X_test.shape}")
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
-
+joblib.dump(le, "models/label_encoder.pkl")
 joblib.dump(scaler, "models/scaler.pkl")
 np.save("data/processed/X_train.npy", X_train_scaled)
 np.save("data/processed/X_test.npy", X_test_scaled)
